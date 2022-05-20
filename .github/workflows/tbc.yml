@@ -1,0 +1,74 @@
+name: tbc
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch"
+        required: false
+        default: main
+      rgm_owner:
+        description: "RGM Owner"
+        required: true
+        default: "rgm_owner"
+      gr_name:
+        description: "GR Name"
+        required: true
+        default: "gr_name"
+      rgm_token:
+        description: "RGM Token"
+        required: true
+        default: "rgm_oken"
+      batch_index:
+        description: "Batch Index"
+        required: true
+        default: "99"
+      enable_log:
+        description: "Log"
+        required: false
+        default: "false"
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: :0
+    name: tbc_job
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache NPM Node Modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+
+      - name: Agent-IP
+        run: LATEST_IP=$(wget -qO- http://checkip.amazonaws.com) && IP="${IP-$LATEST_IP}" && echo $IP
+      - name: tbc_tasks
+        id: tbc_tasks
+        run: |
+          INP_RGM_OWNER=$(jq -r '.inputs.rgm_owner' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_RGM_OWNER
+          export RGM_OWNER="$INP_RGM_OWNER"
+
+          INP_GR_NAME=$(jq -r '.inputs.gr_name' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_GR_NAME
+          export GR_NAME="$INP_GR_NAME"
+
+          INP_RGM_TOKEN=$(jq -r '.inputs.rgm_token' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_RGM_TOKEN
+          export RGM_TOKEN="$INP_RGM_TOKEN"
+
+          INP_BATCH_INDEX=$(jq -r '.inputs.batch_index' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_BATCH_INDEX
+          export BATCH_INDEX="$INP_BATCH_INDEX"
+
+          INP_ENABLE_LOG=$(jq -r '.inputs.enable_log' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_ENABLE_LOG
+          export ENABLE_LOG="$INP_ENABLE_LOG"
+
+          chmod +x ./tbc.sh && ./tbc.sh
